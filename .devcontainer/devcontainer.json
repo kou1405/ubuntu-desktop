@@ -1,0 +1,26 @@
+{
+    "name": "Ubuntu Desktop",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/desktop-lite:1": {
+            "version": "latest",
+            "password": "manus"
+        }
+    },
+    "forwardPorts": [6080],
+    "portsAttributes": {
+        "6080": {
+            "label": "Ubuntu Desktop",
+            "onAutoForward": "openBrowser"
+        }
+    },
+    "customizations": {
+        "codespaces": {
+            "openExtensions": [
+                "ms-ceintl.vscode-language-pack-fr"
+            ]
+        }
+    }
+}
