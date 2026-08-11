@@ -1,9 +1,14 @@
 #!/bin/bash
 
-# Mettre à jour et installer les dépendances
-echo "Installation du bureau Ubuntu (XFCE) et de NoVNC..."
+# Mettre à jour et installer les dépendances manquantes
+echo "Installation des composants système et du bureau Ubuntu..."
 sudo apt-get update
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y xfce4 xfce4-goodies tightvncserver websockify novnc
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y xfce4 xfce4-goodies tightvncserver websockify novnc dbus-x11 x11-xserver-utils
+
+# Nettoyer les anciennes sessions VNC
+echo "Nettoyage des anciennes sessions..."
+vncserver -kill :1 || true
+rm -rf /tmp/.X1-lock /tmp/.X11-unix/X1 || true
 
 # Configurer VNC
 echo "Configuration de VNC..."
@@ -13,23 +18,25 @@ chmod 600 ~/.vnc/passwd
 
 cat <<EOF > ~/.vnc/xstartup
 #!/bin/bash
-xrdb \$HOME/.Xresources
+unset SESSION_MANAGER
+unset DBUS_SESSION_BUS_ADDRESS
 startxfce4 &
 EOF
 chmod +x ~/.vnc/xstartup
 
 # Démarrer VNC
-vncserver -kill :1 || true
+echo "Démarrage du serveur graphique..."
 vncserver :1 -geometry 1280x720 -depth 24
 
-# Démarrer NoVNC
+# Vérifier et démarrer NoVNC
 echo "Démarrage de NoVNC sur le port 6080..."
+pkill -f novnc_proxy || true
 /usr/share/novnc/utils/novnc_proxy --vnc localhost:5901 --listen 6080 &
 
 echo "-------------------------------------------------------"
-echo "VOTRE BUREAU UBUNTU EST PRÊT !"
+echo "CORRECTION APPLIQUÉE ! VOTRE BUREAU EST PRÊT."
 echo "-------------------------------------------------------"
-echo "1. Cliquez sur le bouton 'Aperçu sur le Web' (icône en haut à droite)."
-echo "2. Sélectionnez 'Modifier le port' et entrez : 6080"
-echo "3. Une fois la page ouverte, entrez le mot de passe : manus123"
+echo "1. Retournez sur l'onglet du bureau (vnc.html)."
+echo "2. Si c'est toujours gris, rafraîchissez la page (F5)."
+echo "3. Cliquez sur 'Connect' et entrez : manus123"
 echo "-------------------------------------------------------"
