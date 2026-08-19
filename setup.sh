@@ -1,42 +1,56 @@
 #!/bin/bash
 
-# Configuration des couleurs
+# Couleurs
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "${BLUE}=======================================================${NC}"
-echo -e "${BLUE}   UBUNTU DESKTOP PRO - VERSION ULTRA-STABLE (GCP)     ${NC}"
+echo -e "${BLUE}   UBUNTU DESKTOP PRO - FIX FINAL NAVIGATEUR           ${NC}"
 echo -e "${BLUE}=======================================================${NC}"
 
-# 1. Nettoyage
-echo -e "${GREEN}[1/5] Nettoyage des sessions...${NC}"
+# 1. Nettoyage complet
+echo -e "${GREEN}[1/5] Nettoyage des processus...${NC}"
 vncserver -kill :1 || true
 vncserver -kill :2 || true
-rm -rf /tmp/.X1-lock /tmp/.X2-lock /tmp/.X11-unix/X1 /tmp/.X11-unix/X2 || true
+pkill -f firefox || true
+pkill -f epiphany || true
+pkill -f websockify || true
+rm -rf /tmp/.X*-lock /tmp/.X11-unix/X* || true
 
-# 2. Installation (Navigateur léger + correctifs)
-echo -e "${GREEN}[2/5] Installation du navigateur stable et léger...${NC}"
+# 2. Installation des composants critiques
+echo -e "${GREEN}[2/5] Installation des correctifs de rendu...${NC}"
 sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
     xfce4 xfce4-goodies \
     tightvncserver websockify novnc \
     dbus-x11 x11-xserver-utils \
-    epiphany-browser mousepad terminator \
-    at-spi2-core
+    epiphany-browser at-spi2-core \
+    wmctrl
 
-# 3. Configuration de l'environnement
-echo -e "${GREEN}[3/5] Configuration du bureau...${NC}"
+# 3. Configuration du démarrage (Correction DBUS & Sandbox)
+echo -e "${GREEN}[3/5] Optimisation du démarrage graphique...${NC}"
 mkdir -p ~/.vnc
 echo "manus123" | vncpasswd -f > ~/.vnc/passwd
 chmod 600 ~/.vnc/passwd
 
 cat <<EOF > ~/.vnc/xstartup
 #!/bin/sh
-unset SESSION_MANAGER
-unset DBUS_SESSION_BUS_ADDRESS
+# Initialisation du bus de message (Crucial pour le navigateur)
+if [ -z "\$DBUS_SESSION_BUS_ADDRESS" ]; then
+    eval \$(dbus-launch --sh-syntax --exit-with-session)
+fi
+
 export GTK_A11Y=none
-startxfce4
+export WEBKIT_FORCE_SANDBOX=0
+export WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1
+
+# Lancement du bureau
+startxfce4 &
+
+# Attendre un peu et forcer le lancement du navigateur en mode compatible
+sleep 5
+epiphany --new-window https://www.google.com &
 EOF
 chmod +x ~/.vnc/xstartup
 
@@ -44,15 +58,14 @@ chmod +x ~/.vnc/xstartup
 echo -e "${GREEN}[4/5] Démarrage du serveur graphique...${NC}"
 vncserver :2 -geometry 1280x720 -depth 24
 
-# 5. Lancement du proxy Web (NoVNC)
-echo -e "${GREEN}[5/5] Démarrage du portail Web...${NC}"
-pkill -f websockify || true
+# 5. Lancement du proxy Web NoVNC
+echo -e "${GREEN}[5/5] Activation de l'accès Web...${NC}"
 python3 -m websockify --web /usr/share/novnc 6080 localhost:5902 &
 
 echo -e "${BLUE}=======================================================${NC}"
-echo -e "${GREEN}   BUREAU PRÊT - NAVIGATION WEB STABLE                 ${NC}"
+echo -e "${GREEN}   CORRECTION TERMINÉE !                               ${NC}"
 echo -e "${BLUE}=======================================================${NC}"
-echo -e "1. Ouvrez votre onglet ${BLUE}vnc.html${NC}"
-echo -e "2. Connectez-vous avec le mot de passe : ${GREEN}manus123${NC}"
-echo -e "3. Pour internet, utilisez le navigateur ${GREEN}'Web' (Epiphany)${NC} dans le menu."
+echo -e "1. Rafraîchissez votre page ${BLUE}vnc.html${NC}"
+echo -e "2. Connectez-vous (`manus123`)."
+echo -e "3. Le navigateur Google s'ouvrira ${GREEN}automatiquement${NC} après 5 secondes."
 echo -e "${BLUE}=======================================================${NC}"
